@@ -26,7 +26,7 @@ class MyBot():
 
         @client.command()
         async def bot(ctx):
-            if config.is_allowed(str(ctx.channel)):
+            if config.is_allowed(str(ctx.channel.id)):
                 try:
                     view = MyView(author=ctx.author)
                     view.sent_message = await ctx.send(view=view)
@@ -36,13 +36,12 @@ class MyBot():
         @client.event
         async def on_message(ctx):    
             response = ResponseManeger(ctx)
-            channel = str(ctx.channel)
 
             #ignore own messages
             if ctx.author == client.user:
                 return
             
-            if config.is_allowed(channel):
+            if config.is_allowed(str(ctx.channel.id)):
                 try:
                     await response.send()
                 except Exception as e:
