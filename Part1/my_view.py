@@ -4,7 +4,6 @@ Pedro Amaro
 
 import discord
 import asyncio
-from task_maneger import taskState
 
 class MyView(discord.ui.View):
     """Inherits from discord.ui.view
@@ -16,26 +15,35 @@ class MyView(discord.ui.View):
 
     New methods
     -----------
-        
+        start_task() assigns update_counter() task to self.task, which starts count.
+        embed() is a quality of life method to help update the view embed with new numbers.
+        work() creates the 'Work!' button. Its callback initiates count.
+        cancel() creates the 'Cancel' button. Its callback stops the count.
     """
     def __init__(self, author, timeout=30):
         super().__init__(timeout=timeout)
         self.author = author
         self.sent_message = None
+        self.task = None
+        self.update_count = 0
+
+    def start_task(self):
+        self.task = asyncio.create_task(self.update_counter())  
 
     async def update_counter(self):
-        while True:
+        while self.task is not None:
             await asyncio.sleep(5)
-            taskState.update_count += 1
+            self.update_count += 1
             await self.sent_message.edit(embed=self.embed())
 
     def embed(self):
         embed = discord.Embed(title="Counter")
-        embed.add_field(name="current count:", value=taskState.update_count)
+        embed.add_field(name="current count:", value=self.update_count)
         return embed
 
     @discord.ui.button(label="Work!", style=discord.ButtonStyle.primary)
     async def work(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.start_task()
         button.disabled = True
         button.label = "Working..."
         await interaction.message.edit(view=self)
@@ -44,10 +52,10 @@ class MyView(discord.ui.View):
         
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger)
     async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if taskState.task is not None:
-            taskState.task.cancel()
-            taskState.update_count = 0
-            taskState.task = None
+        if self.task is not None:
+            self.task.cancel()
+            self.update_count = 0
+            self.task = None
         button.disabled = True
         await interaction.message.edit(view=self)
         await interaction.response.send_message("Goodbye")
@@ -57,7 +65,7 @@ class MyView(discord.ui.View):
         return interaction.user == self.author
     
     async def on_timeout(self) -> None:
-        if taskState.task is None:
+        if self.task is None:
             if self.sent_message:
                 await self.sent_message.delete()
                 self.sent_message = None

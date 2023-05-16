@@ -8,7 +8,6 @@ from discord.ext import commands
 from responses_maneger import ResponseManeger
 from config_maneger import ConfigManeger
 from my_view import MyView
-from task_maneger import taskState
 
 
 class MyBot():
@@ -31,16 +30,8 @@ class MyBot():
                 try:
                     view = MyView(author=ctx.author)
                     view.sent_message = await ctx.send(view=view)
-                    if taskState.task is None: #e se duas pessoas quiserem contar? se 1 pessoa chamar 2x !bot, fica um mirror
-                        taskState.task = client.loop.create_task(view.update_counter())
                 except Exception as e:
                     print(e)
-
-        @client.event
-        async def on_button_click(interaction):
-            view = MyView(author=interaction.author)
-            view.sent_message = interaction.message
-            await view(interaction)
 
         @client.event
         async def on_message(ctx):    
@@ -51,14 +42,11 @@ class MyBot():
             if ctx.author == client.user:
                 return
             
-            #debug
-            print(f"{str(ctx.author)} said: '{str(ctx.content)}' in {str(ctx.channel)}")
-            
             if config.is_allowed(channel):
                 try:
                     await response.send()
                 except Exception as e:
-                    print(e)
+                    pass
 
             await client.process_commands(ctx)
 

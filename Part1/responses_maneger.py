@@ -47,9 +47,6 @@ class ResponseManeger():
             return '`let me see what I can do...`'
 
     async def send(self):
-        try:
-            response = self.respond()
-            await self.message.author.send(response) if self.is_private else await self.message.channel.send(response)
-        except Exception as e:
-            #print(e)
-            pass
+        response = self.respond()
+        await self.message.author.send(response) if self.is_private else await self.message.channel.send(response)
+        
