@@ -34,26 +34,52 @@ class MyView(discord.ui.View):
     def start_task(self, task):
         self.task = asyncio.create_task(task)  
 
-    async def fighting(self, id):
+    async def cancel_task(self):
+        try:
+            self.task.cancel()
+        except asyncio.CancelledError:
+            pass
+    
+    async def fighting(self, interaction: discord.Interaction):
         if self.task is not None:
-            player = playerFactory.get_player(id)
+            player = playerFactory.get_player(interaction.user.id)
             monster = monsters.get_monster(player.level)
+
             while True:
+                embed = discord.Embed(title="Fight!")
+                if monster is not None:
+                    embed.add_field(name=player.name, value=f"HP = {player.health}   LV = {player.level}")
+                    embed.add_field(name="VS", value="")
+                    embed.add_field(name=monster.name, value=f"HP = {monster.health}   LV = {monster.level}")
+                else:
+                    embed.add_field(name="Looking for a monster...", value="") #change to display other stats
+                await self.sent_message.edit(embed=embed)
+
                 if monster is None:
-                    player = playerFactory.get_player(id)
                     monster = monsters.get_monster(player.level)
                 else:
                     print("lutando")
-                    #battle code here
-                    pass
-                embed = discord.Embed(title="Fight!")
-                embed.add_field(name=monster.name + '  -VERSUS-', value=monster.health)
-                embed.add_field(name=player.name, value=player.health)
-                await self.sent_message.edit(embed=embed)
+                    monster.health -= 5*player.level
+                    player.health -= 2*monster.level
+
+                    if player.health <= 0:
+                        player.health = player.max_health
+                        await interaction.followup.send("you have died")
+                        await self.cancel_task()
+                    else:
+                        if monster.health <=0:
+                            player.experience += 10
+                            player.silver += 5*monster.level
+                            monster = None
+                            if player.experience%100 == 0:
+                                print("LV UP!")
+                                player.level+=1
+
+                        if player.level == 4:
+                            await interaction.followup.send("You Won!")
+                            await self.cancel_task()
                 await asyncio.sleep(2)
-        else:
-            #say its occupied
-            pass
+
 
     async def update_counter(self):
         while self.task is not None:
@@ -73,9 +99,9 @@ class MyView(discord.ui.View):
 
     @discord.ui.button(label="Start Hunting", style=discord.ButtonStyle.success)
     async def start_hunting(self, interaction: discord.Interaction, button: discord.ui.Button):
-        self.start_task(self.fighting(interaction.user.id))
+        self.start_task(self.fighting(interaction))
         await self.disable_all_buttons()
-        await interaction.response.send_message("The hunt has started...", ephemeral=True)
+        await interaction.response.defer()
 
     @discord.ui.button(label="Work!", style=discord.ButtonStyle.primary)
     async def work(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -89,7 +115,7 @@ class MyView(discord.ui.View):
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger)
     async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
         if self.task is not None:
-            self.task.cancel()
+            await self.cancel_task()
             self.update_count = 0
             self.task = None
         button.disabled = True
