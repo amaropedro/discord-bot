@@ -28,13 +28,3 @@ def get_monster(lv: int) -> 'Monster':
     if lv == 2:
         return Boar()
     return Goblin()
-
-#this way a player could fight monsters with equal or lower level.
-#import ramdom
-# def get_monster(max):
-#         seed = random.randint(1,max)
-#         if seed == 1:
-#             return Rat()
-#         if seed == 2:
-#             return Boar()
-#         return Goblin()

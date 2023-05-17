@@ -46,15 +46,18 @@ class MyView(discord.ui.View):
                 await self.sent_message.edit(embed=None)
                 await interaction.followup.send("you have already mastered the hunt.")
                 await self.cancel_task()
+            elif player.is_fighting:
+                await self.sent_message.edit(embed=None)
+                await interaction.followup.send("you are already hunting.")
+                await self.cancel_task()
             else:
+                player.is_fighting = True
                 monster = monsters.get_monster(player.level)
-                defeated_monsters = 0
-
-                while player.level != 4:
+                while player.is_fighting:
                     if monster is not None:
                         embed = self.fight_embed(player, monster)
                     else:
-                        embed = self.stats_embed(player, defeated_monsters)
+                        embed = self.stats_embed(player, player.defeated_monsters)
                     await self.sent_message.edit(embed=embed)
 
                     if monster is None:
@@ -62,7 +65,7 @@ class MyView(discord.ui.View):
                     else:
                         monster.health -= 5*player.level
                         if monster.health <=0:
-                                defeated_monsters += 1
+                                player.defeated_monsters += 1
                                 player.experience += 10
                                 player.silver += 5*monster.level
                                 monster = None
@@ -73,9 +76,11 @@ class MyView(discord.ui.View):
 
                         if player.health <= 0:
                             player.health = player.max_health
+                            player.is_fighting = False
                             await interaction.followup.send("you have died")
                             await self.cancel_task()
                         if player.level == 4:
+                            player.is_fighting = False
                             await interaction.followup.send("You Won!")
                             await self.cancel_task()
                     await asyncio.sleep(2)
@@ -89,8 +94,8 @@ class MyView(discord.ui.View):
 
     def stats_embed(self, player, defeated_monsters):
         embed = discord.Embed(title=f"{player.name} is looking for a monster...")
-        embed.add_field(name="Monsters Defeated this hunt", value=defeated_monsters)
-        embed.add_field(name="Total experience", value=player.experience)
+        embed.add_field(name="Monsters Defeated", value=defeated_monsters)
+        embed.add_field(name="Total Experience", value=player.experience)
         embed.add_field(name="Silver Gained", value=player.silver)
         embed.add_field(name="Level", value=player.level)
         return embed

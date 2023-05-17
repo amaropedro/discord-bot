@@ -25,5 +25,7 @@ class Player():
         self.silver = 0
         self.health = 250
         self.max_health = 250
+        self.defeated_monsters = 0
+        self.is_fighting = False
 
 playerFactory = PlayerFactory()

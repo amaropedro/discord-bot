@@ -2,8 +2,6 @@
 Pedro Amaro
 """
 
-import random
-
 class ResponseManeger():
     """For a given message, responds accordingly.
     Messages starting with '?' will be answered in private chat
@@ -39,9 +37,6 @@ class ResponseManeger():
 
         if message == 'hello':
             return 'HI! How are you?'
-        
-        if message == 'roll':
-            return str(random.randint(1,6)) 
         
         if message == '!help':
             return '`let me see what I can do...`'
