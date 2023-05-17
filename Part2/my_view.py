@@ -4,6 +4,8 @@ Pedro Amaro
 
 import discord
 import asyncio
+from player import playerFactory
+import monsters
 
 class MyView(discord.ui.View):
     """Inherits from discord.ui.view
@@ -15,7 +17,9 @@ class MyView(discord.ui.View):
 
     New methods
     -----------
-        start_task() assigns update_counter() task to self.task, which starts count.
+        start_task() assigns a given task to self.task where :
+            update_counter() is the counting task;
+            fighting() is the fighting task;
         embed() is a quality of life method to help update the view embed with new numbers.
         work() creates the 'Work!' button. Its callback initiates count.
         cancel() creates the 'Cancel' button. Its callback stops the count.
@@ -27,8 +31,29 @@ class MyView(discord.ui.View):
         self.task = None
         self.update_count = 0
 
-    def start_task(self):
-        self.task = asyncio.create_task(self.update_counter())  
+    def start_task(self, task):
+        self.task = asyncio.create_task(task)  
+
+    async def fighting(self, id):
+        if self.task is not None:
+            player = playerFactory.get_player(id)
+            monster = monsters.get_monster(player.level)
+            while True:
+                if monster is None:
+                    player = playerFactory.get_player(id)
+                    monster = monsters.get_monster(player.level)
+                else:
+                    print("lutando")
+                    #battle code here
+                    pass
+                embed = discord.Embed(title="Fight!")
+                embed.add_field(name=monster.name + '  -VERSUS-', value=monster.health)
+                embed.add_field(name=player.name, value=player.health)
+                await self.sent_message.edit(embed=embed)
+                await asyncio.sleep(2)
+        else:
+            #say its occupied
+            pass
 
     async def update_counter(self):
         while self.task is not None:
@@ -41,9 +66,20 @@ class MyView(discord.ui.View):
         embed.add_field(name="current count:", value=self.update_count)
         return embed
 
+    async def disable_all_buttons(self):
+        for btn in self.children:
+            btn.disabled = True
+        await self.sent_message.edit(view=self)
+
+    @discord.ui.button(label="Start Hunting", style=discord.ButtonStyle.success)
+    async def start_hunting(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.start_task(self.fighting(interaction.user.id))
+        await self.disable_all_buttons()
+        await interaction.response.send_message("The hunt has started...", ephemeral=True)
+
     @discord.ui.button(label="Work!", style=discord.ButtonStyle.primary)
     async def work(self, interaction: discord.Interaction, button: discord.ui.Button):
-        self.start_task()
+        self.start_task(self.update_counter())
         button.disabled = True
         button.label = "Working..."
         await interaction.message.edit(view=self)
