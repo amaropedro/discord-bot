@@ -2,6 +2,8 @@
 Pedro Amaro
 """
 
+import random
+
 class Monster():
     def __init__(self, name, level, max_health):
         self.name = name
@@ -20,3 +22,11 @@ class Boar(Monster):
 class Goblin(Monster):
     def __init__(self):
         super().__init__("Goblin", 3, 60)
+
+def get_monster( max):
+        seed = random.randint(1,max)
+        if seed == 1:
+            return Rat()
+        if seed == 2:
+            return Boar()
+        return Goblin()
