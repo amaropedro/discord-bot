@@ -29,7 +29,7 @@ class MyBot():
             if config.is_allowed(str(ctx.channel.id)):
                 try:
                     playerFactory.create_newPlayer(ctx)
-                    view = MyView(author=ctx.author)
+                    view = MyView(author=ctx.author.id)
                     view.sent_message = await ctx.send(view=view)
                 except Exception as e:
                     print(e)

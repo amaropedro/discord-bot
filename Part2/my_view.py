@@ -137,7 +137,7 @@ class MyView(discord.ui.View):
         await interaction.response.send_message("Goodbye")
         
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
-        return interaction.user == self.author
+        return interaction.user.id == self.author
     
     async def on_timeout(self) -> None:
         if self.task is None:
