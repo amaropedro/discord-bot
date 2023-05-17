@@ -8,7 +8,7 @@ from discord.ext import commands
 from responses_maneger import ResponseManeger
 from config_maneger import ConfigManeger
 from my_view import MyView
-
+from player import playerFactory
 
 class MyBot():
     """A bot that responds to certain user sent messages in the especified default channel.
@@ -28,6 +28,7 @@ class MyBot():
         async def bot(ctx):
             if config.is_allowed(str(ctx.channel.id)):
                 try:
+                    playerFactory.create_newPlayer(ctx)
                     view = MyView(author=ctx.author)
                     view.sent_message = await ctx.send(view=view)
                 except Exception as e:
@@ -43,6 +44,7 @@ class MyBot():
             
             if config.is_allowed(str(ctx.channel.id)):
                 try:
+                    playerFactory.create_newPlayer(ctx)
                     await response.send()
                 except Exception as e:
                     pass
