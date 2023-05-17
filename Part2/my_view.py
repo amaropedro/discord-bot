@@ -17,12 +17,11 @@ class MyView(discord.ui.View):
 
     New methods
     -----------
-        start_task() assigns a given task to self.task where :
-            update_counter() is the counting task;
-            fighting() is the fighting task;
-        embed() is a quality of life method to help update the view embed with new numbers.
-        work() creates the 'Work!' button. Its callback initiates count.
-        cancel() creates the 'Cancel' button. Its callback stops the count.
+        start_task() assigns a given task to self.task.
+        *_embed() are quality of life methods to help update the view embed with new numbers.
+        work() creates the 'Work!' button. It's callback initiates count.
+        cancel() creates the 'Cancel' button. It's callback stops the count.
+        start_hunting() creates the 'Start Hunting' button. It's callback starts the hunting task. 
     """
     def __init__(self, author, timeout=30):
         super().__init__(timeout=timeout)
@@ -40,54 +39,69 @@ class MyView(discord.ui.View):
         except asyncio.CancelledError:
             pass
     
-    async def fighting(self, interaction: discord.Interaction):
+    async def hunting(self, interaction: discord.Interaction):
         if self.task is not None:
-            player = playerFactory.get_player(interaction.user.id)
-            monster = monsters.get_monster(player.level)
+            player = playerFactory.get_player(interaction.user.id)            
+            if player.level == 4:
+                await self.sent_message.edit(embed=None)
+                await interaction.followup.send("you have already mastered the hunt.")
+                await self.cancel_task()
+            else:
+                monster = monsters.get_monster(player.level)
+                defeated_monsters = 0
 
-            while True:
-                embed = discord.Embed(title="Fight!")
-                if monster is not None:
-                    embed.add_field(name=player.name, value=f"HP = {player.health}   LV = {player.level}")
-                    embed.add_field(name="VS", value="")
-                    embed.add_field(name=monster.name, value=f"HP = {monster.health}   LV = {monster.level}")
-                else:
-                    embed.add_field(name="Looking for a monster...", value="") #change to display other stats
-                await self.sent_message.edit(embed=embed)
-
-                if monster is None:
-                    monster = monsters.get_monster(player.level)
-                else:
-                    print("lutando")
-                    monster.health -= 5*player.level
-                    player.health -= 2*monster.level
-
-                    if player.health <= 0:
-                        player.health = player.max_health
-                        await interaction.followup.send("you have died")
-                        await self.cancel_task()
+                while player.level != 4:
+                    if monster is not None:
+                        embed = self.fight_embed(player, monster)
                     else:
-                        if monster.health <=0:
-                            player.experience += 10
-                            player.silver += 5*monster.level
-                            monster = None
-                            if player.experience%100 == 0:
-                                print("LV UP!")
-                                player.level+=1
+                        embed = self.stats_embed(player, defeated_monsters)
+                    await self.sent_message.edit(embed=embed)
 
+                    if monster is None:
+                        monster = monsters.get_monster(player.level)
+                    else:
+                        monster.health -= 5*player.level
+                        if monster.health <=0:
+                                defeated_monsters += 1
+                                player.experience += 10
+                                player.silver += 5*monster.level
+                                monster = None
+                                if player.experience%100 == 0:
+                                    player.level+=1
+                        else:
+                            player.health -= 2*monster.level
+
+                        if player.health <= 0:
+                            player.health = player.max_health
+                            await interaction.followup.send("you have died")
+                            await self.cancel_task()
                         if player.level == 4:
                             await interaction.followup.send("You Won!")
                             await self.cancel_task()
-                await asyncio.sleep(2)
+                    await asyncio.sleep(2)
 
+    def fight_embed(self, player, monster):
+        embed = discord.Embed(title="Hunting!")
+        embed.add_field(name=player.name, value=f"HP = {player.health}   LV = {player.level}")
+        embed.add_field(name="VS", value="")
+        embed.add_field(name=monster.name, value=f"HP = {monster.health}   LV = {monster.level}")
+        return embed
+
+    def stats_embed(self, player, defeated_monsters):
+        embed = discord.Embed(title=f"{player.name} is looking for a monster...")
+        embed.add_field(name="Monsters Defeated this hunt", value=defeated_monsters)
+        embed.add_field(name="Total experience", value=player.experience)
+        embed.add_field(name="Silver Gained", value=player.silver)
+        embed.add_field(name="Level", value=player.level)
+        return embed
 
     async def update_counter(self):
         while self.task is not None:
             await asyncio.sleep(5)
             self.update_count += 1
-            await self.sent_message.edit(embed=self.embed())
+            await self.sent_message.edit(embed=self.counter_embed())
 
-    def embed(self):
+    def counter_embed(self):
         embed = discord.Embed(title="Counter")
         embed.add_field(name="current count:", value=self.update_count)
         return embed
@@ -99,7 +113,7 @@ class MyView(discord.ui.View):
 
     @discord.ui.button(label="Start Hunting", style=discord.ButtonStyle.success)
     async def start_hunting(self, interaction: discord.Interaction, button: discord.ui.Button):
-        self.start_task(self.fighting(interaction))
+        self.start_task(self.hunting(interaction))
         await self.disable_all_buttons()
         await interaction.response.defer()
 
@@ -110,7 +124,7 @@ class MyView(discord.ui.View):
         button.label = "Working..."
         await interaction.message.edit(view=self)
         await interaction.response.send_message("I started to count. Press 'Cancel' to stop.", ephemeral=True)
-        await interaction.message.edit(embed=self.embed())
+        await interaction.message.edit(embed=self.counter_embed())
         
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger)
     async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -122,7 +136,6 @@ class MyView(discord.ui.View):
         await interaction.message.edit(view=self)
         await interaction.response.send_message("Goodbye")
         
-
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         return interaction.user == self.author
     

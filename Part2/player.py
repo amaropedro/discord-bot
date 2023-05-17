@@ -8,14 +8,12 @@ class PlayerFactory():
     
     def create_newPlayer(self, ctx):
         if ctx.author.id not in self.players:
-            #debug
-            print(f"New player created with name: {ctx.author} id: {ctx.author.id}")
             self.players[ctx.author.id] = Player(ctx.author.id, ctx.author)
             
     
     def get_player(self, id) -> 'Player':
-        print(id)
-        print(self.players)
+        """ Takes discord.Interaction.user.id
+        """
         return self.players[id]
 
 class Player():
