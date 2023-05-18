@@ -122,11 +122,13 @@ class MyView(discord.ui.View):
         await self.disable_all_buttons()
         await interaction.response.defer()
 
+
     @discord.ui.button(label="Work!", style=discord.ButtonStyle.primary)
     async def work(self, interaction: discord.Interaction, button: discord.ui.Button):
         self.start_task(self.update_counter())
         button.disabled = True
         button.label = "Working..."
+        self.children[0].disabled = True
         await interaction.message.edit(view=self)
         await interaction.response.send_message("I started to count. Press 'Cancel' to stop.", ephemeral=True)
         await interaction.message.edit(embed=self.counter_embed())
